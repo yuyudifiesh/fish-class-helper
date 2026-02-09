@@ -1,6 +1,10 @@
 # fish-class-helper
 助人为乐。
 
+## 目录
+- [快速工具]()
+- [常用程序下载跳转](./#常用程序下载跳转)
+
 ## 快速工具
 - [文件名称批量修改](./tools/rename.html)
 - [图片格式转换工具](./tools/tototo.html)
