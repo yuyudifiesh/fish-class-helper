@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件重命名工具</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --theme: #5279fb;
+            --theme-rgb: 82,121,251;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        #app {
+            width: 100%;
+            max-width: 800px;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: none;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            padding: 32px;
+            width: 90%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal h2 {
+            font-size: 22px;
+            color: #1f2937;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 15px;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .form-input:focus {
+            border-color: var(--theme);
+            box-shadow: 0 0 0 3px rgba(var(--theme-rgb), 0.1);
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+        
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--theme) 0%, #3152d1 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(var(--theme-rgb), 0.4);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        /* 主界面 */
+        .info-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            border: none;
+        }
+        
+        .info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #c7d2fe;
+            font-size: 14px;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #6b7280;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .btn-reset {
+            background: white;
+            border: 2px solid #e5e7eb;
+            color: #6b7280;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+        
+        .btn-reset:hover {
+            border-color: var(--theme);
+            color: var(--theme);
+        }
+        
+        .drop-zone {
+            border: 3px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 50px 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f9fafb;
+            position: relative;
+        }
+        
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--theme);
+            background: #f0f4ff;
+            transform: translateY(-2px);
+        }
+
+        .drop-zone.dragover {
+            border-color: #5279fb;
+            background: #e0e7ff;
+        }
+        
+        .drop-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+        
+        .drop-text {
+            color: #4b5563;
+            font-size: 16px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .drop-hint {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-list {
+            margin-top: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .file-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .original-name {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+        
+        .new-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1f2937;
+            word-break: break-all;
+            padding: 8px 12px;
+            background: #f0f9ff;
+            border-radius: 12px;
+            border-left: 3px solid #0ea5e9;
+        }
+        
+        .file-type-tag {
+            display: inline-block;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #4f46e5;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 12px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--theme) 0%, #5279fb 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+        
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #9ca3af;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .clear-all {
+            text-align: center;
+            margin-top: 16px;
+        }
+        
+        .btn-clear {
+            background: transparent;
+            color: #ef4444;
+            font-size: 13px;
+            padding: 8px 16px;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-clear:hover {
+            background: #fee2e2;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 初始弹窗 -->
+        <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+            <div class="modal">
+                <h2>填写基本信息</h2>
+                <form @submit.prevent="saveInfo">
+                    <div class="form-group">
+                        <label class="form-label">姓名</label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            v-model="form.name" 
+                            placeholder="请输入姓名"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">学号</label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            v-model="form.studentId" 
+                            placeholder="请输入学号"
+                            required
+                        >
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">文件用途</label>
+                        <input 
+                            type="text" 
+                            class="form-input" 
+                            v-model="form.purpose" 
+                            placeholder="实践内容"
+                            required
+                        >
+                        <div class="form-hint">例如：社会实践、实验报告、课程作业等</div>
+                    </div>
+                    
+                    <button type="submit" class="btn-submit" :disabled="!isFormValid">
+                        开始使用
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div class="container" v-show="!showModal">
+            <h1>文件批量重命名工具</h1>
+            <p class="subtitle">工具在本地处理，不经过服务器</p>
+            
+            <!-- 信息展示卡片 -->
+            <div class="info-card">
+                <div class="info-title">
+                    当前设置信息
+                </div>
+                <div class="info-item">
+                    <span class="info-label">姓名</span>
+                    <span class="info-value">{{ form.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">学号</span>
+                    <span class="info-value">{{ form.studentId }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">文件用途</span>
+                    <span class="info-value">{{ form.purpose }}</span>
+                </div>
+                <button class="btn-reset" @click="resetInfo">修改信息</button>
+            </div>
+            
+            <!-- 拖拽区域 -->
+            <div 
+                class="drop-zone" 
+                :class="{ dragover: isDragging }"
+                @click="$refs.fileInput.click()"
+                @drop.prevent="handleDrop"
+                @dragover.prevent="isDragging = true"
+                @dragleave.prevent="isDragging = false"
+            >
+                <div class="drop-icon">📂</div>
+                <div class="drop-text">点击或拖拽文件到此处</div>
+                <div class="drop-hint">支持图片、视频、文档等各种格式</div>
+                <input 
+                    ref="fileInput" 
+                    type="file" 
+                    multiple 
+                    @change="handleFileSelect"
+                >
+            </div>
+            
+            <!-- 文件列表 -->
+            <div v-if="files.length > 0" class="file-list">
+                <div v-for="(file, index) in files" :key="index" class="file-card">
+                    <div class="file-info">
+                        <div class="original-name">原文件名：{{ file.originalName }}</div>
+                        <div class="new-name">{{ file.newName }}</div>
+                        <span class="file-type-tag">
+                            {{ file.typeDescription }}
+                        </span>
+                    </div>
+                    
+                    <div class="file-actions">
+                        <button class="btn-primary" @click="downloadFile(file)">
+                            下载
+                        </button>
+                        <button class="btn-secondary" @click="removeFile(index)">
+                            删除
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="clear-all">
+                    <button class="btn-clear" @click="clearAll">清空全部</button>
+                </div>
+            </div>
+            
+            <div v-else class="empty-state">
+                <p>暂无文件，请上传需要处理的文件</p>
+            </div>
+        </div>
+        
+        <div class="toast" :class="{ show: toast.show }">{{ toast.message }}</div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    showModal: true,
+                    isDragging: false,
+                    form: {
+                        name: '',
+                        studentId: '',
+                        purpose: ''
+                    },
+                    files: [],
+                    toast: {
+                        show: false,
+                        message: ''
+                    }
+                }
+            },
+            computed: {
+                isFormValid() {
+                    return this.form.name.trim() && 
+                           this.form.studentId.trim() && 
+                           this.form.purpose.trim();
+                }
+            },
+            mounted() {
+                // 检查本地存储
+                const saved = localStorage.getItem('fileRenameInfo');
+                if (saved) {
+                    this.form = JSON.parse(saved);
+                    this.showModal = false;
+                }
+            },
+            methods: {
+                closeModal() {
+                    // 点击遮罩不关闭，必须通过填写完成
+                },
+                
+                saveInfo() {
+                    if (!this.isFormValid) return;
+                    
+                    // 保存到本地存储
+                    localStorage.setItem('fileRenameInfo', JSON.stringify(this.form));
+                    this.showModal = false;
+                    this.showToast('信息已保存，请拖拽文件开始处理');
+                },
+                
+                resetInfo() {
+                    this.showModal = true;
+                },
+                
+                showToast(message) {
+                    this.toast.message = message;
+                    this.toast.show = true;
+                    setTimeout(() => {
+                        this.toast.show = false;
+                    }, 3000);
+                },
+                
+                handleDrop(e) {
+                    this.isDragging = false;
+                    const files = Array.from(e.dataTransfer.files);
+                    this.processFiles(files);
+                },
+                
+                handleFileSelect(e) {
+                    const files = Array.from(e.target.files);
+                    this.processFiles(files);
+                    e.target.value = '';
+                },
+                
+                processFiles(fileList) {
+                    for (const file of fileList) {
+                        const fileObj = {
+                            originalFile: file,
+                            originalName: file.name,
+                            newName: this.generateNewName(file),
+                            typeDescription: this.getTypeDescription(file),
+                            ext: this.getExtension(file.name)
+                        };
+                        this.files.push(fileObj);
+                    }
+                    this.showToast(`已添加 ${fileList.length} 个文件`);
+                },
+                
+                getExtension(filename) {
+                    return filename.split('.').pop().toLowerCase();
+                },
+                
+                getTypeDescription(file) {
+                    const ext = this.getExtension(file.name);
+                    const typeMap = {
+                        // 图片
+                        'jpg': '图片',
+                        'jpeg': '图片',
+                        'png': '图片',
+                        'gif': '图片',
+                        'bmp': '图片',
+                        'webp': '图片',
+                        'svg': '图片',
+                        'ico': '图标',
+                        // 视频
+                        'mp4': '视频',
+                        'avi': '视频',
+                        'mov': '视频',
+                        'wmv': '视频',
+                        'flv': '视频',
+                        'mkv': '视频',
+                        'webm': '视频',
+                        'm4v': '视频',
+                        'mpg': '视频',
+                        'mpeg': '视频',
+                        // 文档
+                        'pdf': '文档',
+                        'doc': '文档',
+                        'docx': '文档',
+                        'txt': '文本',
+                        'rtf': '文档',
+                        'odt': '文档',
+                        // 表格
+                        'xls': '表格',
+                        'xlsx': '表格',
+                        'csv': '表格',
+                        'ods': '表格',
+                        // 演示
+                        'ppt': '演示',
+                        'pptx': '演示',
+                        'odp': '演示',
+                        // 音频
+                        'mp3': '音频',
+                        'wav': '音频',
+                        'wma': '音频',
+                        'aac': '音频',
+                        'flac': '音频',
+                        'm4a': '音频',
+                        'ogg': '音频',
+                        // 压缩包
+                        'zip': '压缩包',
+                        'rar': '压缩包',
+                        '7z': '压缩包',
+                        'tar': '压缩包',
+                        'gz': '压缩包',
+                        // 代码/程序
+                        'html': '网页',
+                        'htm': '网页',
+                        'css': '样式',
+                        'js': '脚本',
+                        'ts': '脚本',
+                        'py': '程序',
+                        'java': '程序',
+                        'cpp': '程序',
+                        'hwt': '主题',
+                        'c': '程序',
+                        'h': '头文件',
+                        'php': '程序',
+                        'json': '数据',
+                        'xml': '数据',
+                        'sql': '数据库',
+                        'exe': 'W程序',
+                        'apk': '应用',
+                        'ipa': '应用',
+                        'hap': '应用',
+                        // 其他
+                        'wps': 'WPS文件'
+                    };
+                    
+                    return typeMap[ext] || '文件';
+                },
+                
+                generateNewName(file) {
+                    const ext = this.getExtension(file.name);
+                    const typeDesc = this.getTypeDescription(file);
+                    
+                    // 格式：[姓名]-[学号]-[文件用途]（[文件用途][类型描述]）.格式
+                    const baseName = `${this.form.name}-${this.form.studentId}-${this.form.purpose}`;
+                    const suffix = `${this.form.purpose}${typeDesc}`;
+                    
+                    return `${baseName}（${suffix}）.${ext}`;
+                },
+                
+                downloadFile(fileObj) {
+                    const blob = new Blob([fileObj.originalFile], { type: fileObj.originalFile.type || 'application/octet-stream' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileObj.newName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    this.showToast(`已下载: ${fileObj.newName}`);
+                },
+                
+                removeFile(index) {
+                    this.files.splice(index, 1);
+                },
+                
+                clearAll() {
+                    this.files = [];
+                    this.showToast('已清空全部文件');
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
