@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片格式转换器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .drop-zone {
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: #5279fb;
+            background: #eff6ff;
+        }
+        
+        .format-btn {
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+        
+        .format-btn.active {
+            background: #2775b6;
+            color: white;
+            border-color: #2775b6;
+        }
+        
+        .preview-container {
+            background: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .btn-convert {
+            background: #2775b6;
+            transition: none;
+        }
+        
+        .btn-convert:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-convert:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-download {
+            background: #5279fb;
+            transition: none;
+        }
+        
+        .btn-download:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-download:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #5279fb;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Custom range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #5279fb;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+        
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex items-center justify-center">
+
+    <div class="p-6 md:p-8 w-full max-w-4xl fade-in">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">图片格式转换器</h1>
+            <p class="text-gray-600">支持 PNG、JPG、WebP、GIF、BMP 格式互转，完全本地处理，保护隐私</p>
+        </div>
+
+        <!-- Drop Zone -->
+        <div id="dropZone" class="drop-zone rounded-lg p-8 md:p-12 text-center cursor-pointer mb-6 relative overflow-hidden group">
+            <input type="file" id="fileInput" class="hidden" accept="image/*">
+            
+            <div class="relative z-10">
+                <div class="mb-4">
+                    <svg class="w-16 h-16 mx-auto text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                </div>
+                <p class="text-lg font-medium text-gray-700 mb-2">拖放图片到这里</p>
+                <p class="text-sm text-gray-500 mb-4">或者点击选择文件</p>
+                <p class="text-xs text-gray-400">支持 JPG, PNG, WebP, GIF, BMP, TIFF, SVG</p>
+            </div>
+        </div>
+
+        <!-- File Info -->
+        <div id="fileInfo" class="hidden mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p id="fileName" class="font-medium text-gray-800 text-sm md:text-base truncate max-w-[200px] md:max-w-md"></p>
+                        <p id="fileSize" class="text-xs text-gray-500"></p>
+                    </div>
+                </div>
+                <button onclick="clearFile()" class="text-gray-400 hover:text-red-500 transition-colors p-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div id="previewSection" class="hidden mb-6">
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Original Preview -->
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+                        原始图片
+                    </h3>
+                    <div class="preview-container rounded-lg overflow-hidden border border-gray-200 relative aspect-video flex items-center justify-center bg-gray-100">
+                        <img id="originalPreview" class="max-w-full max-h-full object-contain" alt="原始图片">
+                    </div>
+                    <div class="mt-2 flex justify-between text-xs text-gray-500">
+                        <span id="originalDimensions">尺寸: -</span>
+                        <span id="originalFormat">格式: -</span>
+                    </div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flex items-center justify-center md:pt-8">
+                    <svg class="w-8 h-8 text-gray-400 transform md:rotate-0 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </div>
+
+                <!-- Converted Preview -->
+                <div class="flex-1">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                        转换后预览
+                    </h3>
+                    <div class="preview-container rounded-lg overflow-hidden border border-gray-200 relative aspect-video flex items-center justify-center bg-gray-100">
+                        <img id="convertedPreview" class="max-w-full max-h-full object-contain hidden" alt="转换后图片">
+                        <div id="convertedPlaceholder" class="text-gray-400 text-center p-4">
+                            <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            <p class="text-sm">转换后将显示预览</p>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex justify-between text-xs text-gray-500">
+                        <span id="convertedDimensions">尺寸: -</span>
+                        <span id="convertedSize">大小: -</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Format Selection -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold text-gray-700 mb-3">选择目标格式</label>
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                <button class="format-btn active px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/png">
+                    PNG
+                    <span class="block text-xs font-normal opacity-75 mt-1">无损压缩</span>
+                </button>
+                <button class="format-btn px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/jpeg">
+                    JPG
+                    <span class="block text-xs font-normal opacity-75 mt-1">有损压缩</span>
+                </button>
+                <button class="format-btn px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/webp">
+                    WebP
+                    <span class="block text-xs font-normal opacity-75 mt-1">现代格式</span>
+                </button>
+                <button class="format-btn px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/gif">
+                    GIF
+                    <span class="block text-xs font-normal opacity-75 mt-1">动图支持</span>
+                </button>
+                <button class="format-btn px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/bmp">
+                    BMP
+                    <span class="block text-xs font-normal opacity-75 mt-1">位图格式</span>
+                </button>
+                <button class="format-btn px-4 py-3 rounded-lg border border-gray-200 font-medium text-sm" data-format="image/tiff">
+                    TIFF
+                    <span class="block text-xs font-normal opacity-75 mt-1">印刷格式</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quality Slider (for lossy formats) -->
+        <div id="qualityControl" class="hidden mb-6 bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <div class="flex items-center justify-between mb-2">
+                <label class="text-sm font-medium text-gray-700">压缩质量</label>
+                <span id="qualityValue" class="text-sm font-bold" style="color: #5279fb;">90%</span>
+            </div>
+            <input type="range" id="qualitySlider" min="1" max="100" value="90" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <div class="flex justify-between mt-1 text-xs text-gray-500">
+                <span>低质量 (小文件)</span>
+                <span>高质量 (大文件)</span>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4">
+            <button id="convertBtn" onclick="convertImage()" disabled class="btn-convert flex-1 py-4 px-6 rounded-lg text-white font-semibold text-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span id="convertBtnText">开始转换</span>
+                <div id="convertSpinner" class="loading-spinner hidden"></div>
+            </button>
+            
+            <button id="downloadBtn" onclick="downloadImage()" disabled class="btn-download flex-1 py-4 px-6 rounded-lg text-white font-semibold text-lg flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>下载图片</span>
+            </button>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" class="hidden mt-4 p-4 rounded-lg text-center font-medium"></div>
+
+        <!-- Info Footer -->
+        <div class="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p class="text-xs text-gray-500 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
+                所有处理均在本地浏览器完成，图片不会上传到任何服务器
+            </p>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let originalImage = null;
+        let convertedDataUrl = null;
+        let selectedFormat = 'image/png';
+        let quality = 0.9;
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const previewSection = document.getElementById('previewSection');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const qualityControl = document.getElementById('qualityControl');
+
+        // Drag and Drop Events
+        dropZone.addEventListener('click', () => fileInput.click());
+        
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+        });
+
+        // Format Selection
+        document.querySelectorAll('.format-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedFormat = btn.dataset.format;
+                
+                // Show quality slider for lossy formats
+                if (selectedFormat === 'image/jpeg' || selectedFormat === 'image/webp') {
+                    qualityControl.classList.remove('hidden');
+                } else {
+                    qualityControl.classList.add('hidden');
+                }
+                
+                // Reset converted preview when format changes
+                if (convertedDataUrl) {
+                    convertedDataUrl = null;
+                    document.getElementById('convertedPreview').classList.add('hidden');
+                    document.getElementById('convertedPlaceholder').classList.remove('hidden');
+                    document.getElementById('convertedDimensions').textContent = '尺寸: -';
+                    document.getElementById('convertedSize').textContent = '大小: -';
+                    downloadBtn.disabled = true;
+                    convertBtn.disabled = false;
+                    document.getElementById('convertBtnText').textContent = '重新转换';
+                }
+            });
+        });
+
+        // Quality Slider
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        qualitySlider.addEventListener('input', (e) => {
+            quality = e.target.value / 100;
+            qualityValue.textContent = e.target.value + '%';
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showStatus('请选择有效的图片文件', 'error');
+                return;
+            }
+
+            currentFile = file;
+            
+            // Update file info
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('hidden');
+            
+            // Load image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalImage = new Image();
+                originalImage.onload = () => {
+                    // Update preview
+                    document.getElementById('originalPreview').src = originalImage.src;
+                    document.getElementById('originalDimensions').textContent = 
+                        `尺寸: ${originalImage.width} x ${originalImage.height}`;
+                    document.getElementById('originalFormat').textContent = 
+                        `格式: ${file.type.split('/')[1].toUpperCase()}`;
+                    
+                    previewSection.classList.remove('hidden');
+                    convertBtn.disabled = false;
+                    
+                    // Reset converted state
+                    convertedDataUrl = null;
+                    document.getElementById('convertedPreview').classList.add('hidden');
+                    document.getElementById('convertedPlaceholder').classList.remove('hidden');
+                    document.getElementById('convertedDimensions').textContent = '尺寸: -';
+                    document.getElementById('convertedSize').textContent = '大小: -';
+                    downloadBtn.disabled = true;
+                    document.getElementById('convertBtnText').textContent = '开始转换';
+                };
+                originalImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            showStatus('图片加载成功，请选择格式并点击转换', 'success');
+        }
+
+        function clearFile() {
+            currentFile = null;
+            originalImage = null;
+            convertedDataUrl = null;
+            
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            previewSection.classList.add('hidden');
+            convertBtn.disabled = true;
+            downloadBtn.disabled = true;
+            document.getElementById('convertBtnText').textContent = '开始转换';
+            
+            // Reset format to PNG
+            document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('[data-format="image/png"]').classList.add('active');
+            selectedFormat = 'image/png';
+            qualityControl.classList.add('hidden');
+        }
+
+        function convertImage() {
+            if (!originalImage) return;
+            
+            const btnText = document.getElementById('convertBtnText');
+            const spinner = document.getElementById('convertSpinner');
+            
+            btnText.textContent = '转换中...';
+            spinner.classList.remove('hidden');
+            convertBtn.disabled = true;
+            
+            // Use setTimeout to allow UI update before heavy processing
+            setTimeout(() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = originalImage.width;
+                    canvas.height = originalImage.height;
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Fill white background for JPEG to handle transparency
+                    if (selectedFormat === 'image/jpeg') {
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    }
+                    
+                    ctx.drawImage(originalImage, 0, 0);
+                    
+                    // Convert based on format
+                    let dataUrl;
+                    if (selectedFormat === 'image/jpeg' || selectedFormat === 'image/webp') {
+                        dataUrl = canvas.toDataURL(selectedFormat, quality);
+                    } else {
+                        dataUrl = canvas.toDataURL(selectedFormat);
+                    }
+                    
+                    convertedDataUrl = dataUrl;
+                    
+                    // Update converted preview
+                    const convertedImg = document.getElementById('convertedPreview');
+                    convertedImg.src = dataUrl;
+                    convertedImg.classList.remove('hidden');
+                    document.getElementById('convertedPlaceholder').classList.add('hidden');
+                    
+                    // Calculate converted size
+                    const base64 = dataUrl.split(',')[1];
+                    const size = Math.ceil(base64.length * 0.75);
+                    
+                    document.getElementById('convertedDimensions').textContent = 
+                        `尺寸: ${originalImage.width} x ${originalImage.height}`;
+                    document.getElementById('convertedSize').textContent = 
+                        `大小: ${formatFileSize(size)}`;
+                    
+                    downloadBtn.disabled = false;
+                    btnText.textContent = '转换完成';
+                    spinner.classList.add('hidden');
+                    
+                    showStatus('转换成功！点击下载按钮保存图片', 'success');
+                    
+                } catch (error) {
+                    console.error(error);
+                    btnText.textContent = '转换失败';
+                    spinner.classList.add('hidden');
+                    convertBtn.disabled = false;
+                    showStatus('转换失败: ' + error.message, 'error');
+                }
+            }, 100);
+        }
+
+        function downloadImage() {
+            if (!convertedDataUrl) return;
+            
+            const link = document.createElement('a');
+            const extension = selectedFormat.split('/')[1];
+            const originalName = currentFile.name.replace(/\.[^/.]+$/, '');
+            link.download = `${originalName}_converted.${extension}`;
+            link.href = convertedDataUrl;
+            link.click();
+            
+            showStatus('下载已开始', 'success');
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.classList.remove('hidden', 'bg-green-100', 'text-green-700', 'bg-red-100', 'text-red-700');
+            
+            if (type === 'success') {
+                statusDiv.classList.add('bg-green-100', 'text-green-700');
+            } else if (type === 'error') {
+                statusDiv.classList.add('bg-red-100', 'text-red-700');
+            }
+            
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
