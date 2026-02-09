@@ -1,9 +1,12 @@
 # fish-class-helper
-助人为乐。
+助人为乐。如果您知道如何正确寻找工具或者特定网站，建议您直接使用搜索工具。
+
+快速跳转：[Bing](https://cn.bing.com) [百度](https://www.baidu.com) [Google](https://www.google.com/)
 
 ## 目录
-- [快速工具]()
+- [快速工具](./#快速工具)
 - [常用程序下载跳转](./#常用程序下载跳转)
+- [人工智能对话](./#人工智能对话)
 
 ## 快速工具
 - [文件名称批量修改](./tools/rename.html)
@@ -40,4 +43,11 @@
   - [哔哩哔哩](https://app.bilibili.com) [抖音Windows](https://www.douyin.com/download/pc/obj/douyin-pc-web/douyin-pc-client/7044145585217083655/releases/297730692/7.2.0/win32-ia32/douyin-downloader-v7.2.0-win32-ia32-douyincold.exe) [小红书](https://www.xiaohongshu.com/download)
 - 电脑实用工具
   - [Geek](https://geekuninstaller.com/download) [Everything](https://www.voidtools.com/zh-cn/downloads/)
+
+## 人工智能对话
+- 中国大陆可用
+  - [豆包](https://chat.doubao.com) [DeepSeek](https://chat.deepseek.com) [千问](https://www.qianwen.com) [文心](https://yiyan.baidu.com/) [华为小艺](https://xiaoyi.huawei.com/chat/)
+- 可能需要工具
+  - [ChatGPT](https://chatgpt.com) [Gemini](https://gemini.google.com/app) [Grok](https://grok.com/)
+  - [在 Google 上搜索更多](https://www.google.com/search?q=AI+CHAT&udm=web)
 
